@@ -1,0 +1,27 @@
+# Dependencias
+node_modules/
+frontend/node_modules/
+
+# Compilados
+dist/
+frontend/dist/
+dist-ssr/
+*.local
+
+# Archivos de entorno y credenciales
+.env
+.env.*.local
+frontend/.env
+frontend/.env.local
+
+# Editores e IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+Thumbs.db
+ehthumbs.db
+Desktop.ini
