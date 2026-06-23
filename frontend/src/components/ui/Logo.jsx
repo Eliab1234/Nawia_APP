@@ -29,7 +29,7 @@ export const Logo = ({ className = '', size = 32 }) => {
         />
       </svg>
       <span style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.5px', color: 'var(--text-primary)' }}>
-        ocu<span className="text-accent">vision</span>
+        Naw<span className="text-accent">IA</span>
       </span>
     </div>
   );

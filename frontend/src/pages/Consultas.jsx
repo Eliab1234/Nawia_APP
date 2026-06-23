@@ -11,6 +11,7 @@ export const Consultas = () => {
   const [dni, setDni] = useState('');
   const [paciente, setPaciente] = useState(null);
   const [pacienteError, setPacienteError] = useState('');
+  const [patientsList, setPatientsList] = useState([]);
 
   // Estados de la imagen
   const [file, setFile] = useState(null);
@@ -26,6 +27,11 @@ export const Consultas = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
+  // Nuevos estados para el flujo en dos pasos
+  const [analysisCompleted, setAnalysisCompleted] = useState(false);
+  const [publicImageUrl, setPublicImageUrl] = useState('');
+  const [saving, setSaving] = useState(false);
+
   const fileInputRef = useRef(null);
 
   // Leer DNI de la URL si se transfirió desde la tabla de pacientes
@@ -36,6 +42,40 @@ export const Consultas = () => {
       verificarPaciente(dniParam);
     }
   }, [searchParams]);
+
+  const fetchPatients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('pacientes')
+        .select('dni, nombres_apellidos')
+        .order('nombres_apellidos', { ascending: true });
+      if (error) throw error;
+      setPatientsList(data || []);
+    } catch (err) {
+      console.error('Error al cargar pacientes:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchPatients();
+  }, []);
+
+  const handlePatientSelectChange = (e) => {
+    const selectedDni = e.target.value;
+    setDni(selectedDni);
+    if (selectedDni) {
+      const match = patientsList.find((p) => p.dni === selectedDni);
+      if (match) {
+        setPaciente(match);
+        setPacienteError('');
+      } else {
+        verificarPaciente(selectedDni);
+      }
+    } else {
+      setPaciente(null);
+      setPacienteError('');
+    }
+  };
 
   // Verificar si el DNI del paciente existe en la base de datos
   const verificarPaciente = async (valDni) => {
@@ -117,14 +157,36 @@ export const Consultas = () => {
     setProbabilidades(null);
   };
 
+  const handleReset = () => {
+    setDni('');
+    setPaciente(null);
+    setPacienteError('');
+    setFile(null);
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    setPreviewUrl(null);
+    setIsDragging(false);
+    setDiagnostico('');
+    setProbabilidades(null);
+    setError(null);
+    setSuccess(null);
+    setAnalysisCompleted(false);
+    setPublicImageUrl('');
+    setSaving(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const triggerFileSelect = () => {
     fileInputRef.current.click();
   };
 
   // =========================================================================
-  // LOGICA PRINCIPAL: EJECUTAR ANÁLISIS IA Y GUARDAR CONSULTA (ORDEN ESTRICTO)
+  // LOGICA PRINCIPAL: EJECUTAR ANÁLISIS IA (PASO 1 Y 2)
   // =========================================================================
-  const handleExecuteAnalysisAndSave = async (e) => {
+  const handleExecuteAnalysis = async (e) => {
     e.preventDefault();
     
     // Validaciones previas
@@ -141,6 +203,8 @@ export const Consultas = () => {
     setError(null);
     setSuccess(null);
     setProbabilidades(null);
+    setAnalysisCompleted(false);
+    setPublicImageUrl('');
 
     try {
       // 1. Subir la imagen de la retina a Supabase Storage
@@ -164,10 +228,11 @@ export const Consultas = () => {
         .from('retinas')
         .getPublicUrl(nombreUnico);
 
-      const publicImageUrl = publicUrlData?.publicUrl;
-      if (!publicImageUrl) {
+      const publicUrl = publicUrlData?.publicUrl;
+      if (!publicUrl) {
         throw new Error('No se pudo obtener la URL pública de la imagen cargada.');
       }
+      setPublicImageUrl(publicUrl);
 
       // 3. Enviar la imagen física mediante FormData a la API de IA externa
       const formData = new FormData();
@@ -197,14 +262,39 @@ export const Consultas = () => {
         Miopia: resJson.Miopia !== undefined ? resJson.Miopia : 0
       };
       setProbabilidades(probsMapped);
+      setAnalysisCompleted(true);
 
-      // 5. Obtener usuario médico autenticado
+    } catch (err) {
+      console.error(err);
+      setError(err.message || 'Ocurrió un error inesperado durante el procesamiento del análisis.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // =========================================================================
+  // GUARDAR CONSULTA EN BASE DE DATOS (PASO 3)
+  // =========================================================================
+  const handleSaveConsultation = async (e) => {
+    e.preventDefault();
+
+    if (!analysisCompleted || !probabilidades || !publicImageUrl) {
+      setError('Primero debes ejecutar el análisis de IA y obtener resultados.');
+      return;
+    }
+
+    setSaving(true);
+    setError(null);
+    setSuccess(null);
+
+    try {
+      // 1. Obtener usuario médico autenticado
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         throw new Error('Médico no autenticado en Supabase.');
       }
 
-      // 6. Insertar el nuevo registro en la tabla 'consultas'
+      // 2. Insertar el nuevo registro en la tabla 'consultas'
       const { error: insertError } = await supabase
         .from('consultas')
         .insert([
@@ -212,13 +302,13 @@ export const Consultas = () => {
             dni_paciente: dni,
             id_medico: user.id,
             ruta_imagen: publicImageUrl,
-            prob_normal: probsMapped.Normal,
-            prob_glaucoma: probsMapped.Glaucoma,
-            prob_catarata: probsMapped.Catarata,
-            prob_retinopatia_diabetica: probsMapped.Retinopatia_Diabetica,
-            prob_degeneracion_macular: probsMapped.Degeneracion_Macular,
-            prob_retinopatia_hipertensiva: probsMapped.Retinopatia_Hipertensiva,
-            prob_miopia: probsMapped.Miopia,
+            prob_normal: probabilidades.Normal,
+            prob_glaucoma: probabilidades.Glaucoma,
+            prob_catarata: probabilidades.Catarata,
+            prob_retinopatia_diabetica: probabilidades.Retinopatia_Diabetica,
+            prob_degeneracion_macular: probabilidades.Degeneracion_Macular,
+            prob_retinopatia_hipertensiva: probabilidades.Retinopatia_Hipertensiva,
+            prob_miopia: probabilidades.Miopia,
             diagnostico: diagnostico || null
           }
         ]);
@@ -227,18 +317,12 @@ export const Consultas = () => {
         throw new Error(`Error al guardar en base de datos: ${insertError.message}`);
       }
 
-      setSuccess('Análisis completado y consulta guardada con éxito.');
-
-      // Redirigir al Dashboard después de 4 segundos (para que el médico observe las barras de progreso)
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 4000);
-
+      setSuccess('Consulta guardada con éxito en la base de datos.');
     } catch (err) {
       console.error(err);
-      setError(err.message || 'Ocurrió un error inesperado durante el procesamiento.');
+      setError(err.message || 'Ocurrió un error al intentar guardar la consulta.');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
@@ -263,6 +347,30 @@ export const Consultas = () => {
     return traducciones[name] || name;
   };
 
+  const obtenerDiagnosticoIA = () => {
+    if (!probabilidades) return '';
+    
+    // Encontrar la patología con mayor probabilidad
+    let maxPathology = '';
+    let maxVal = -1;
+    
+    Object.entries(probabilidades).forEach(([key, val]) => {
+      if (val > maxVal) {
+        maxVal = val;
+        maxPathology = key;
+      }
+    });
+
+    const nombreTraducido = traducirPatologia(maxPathology);
+    const porcentaje = (maxVal * 100).toFixed(2);
+    
+    if (maxPathology === 'Normal') {
+      return `Diagnóstico IA: Retinografía Normal (${porcentaje}% de confianza)`;
+    } else {
+      return `Diagnóstico IA: Sospecha de ${nombreTraducido} (${porcentaje}% de confianza)`;
+    }
+  };
+
   return (
     <Layout>
       <div className="dashboard-header-bar">
@@ -274,6 +382,11 @@ export const Consultas = () => {
 
       {error && <div className="alert alert-danger">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
+      {!success && analysisCompleted && (
+        <div className="alert border border-sky-100 bg-sky-50 text-sky-700 font-semibold mb-6">
+          Análisis de IA completado con éxito. Ahora puede escribir el dictamen y guardar la consulta.
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         
@@ -283,19 +396,23 @@ export const Consultas = () => {
             <h2 className="text-lg font-bold text-primary mb-4">Paso 1: Identificar Paciente</h2>
             
             <div className="form-group">
-              <label className="form-label" htmlFor="patient-dni">
-                DNI del Paciente (8 dígitos)
+              <label className="form-label" htmlFor="patient-select">
+                Seleccionar Paciente
               </label>
-              <input
-                type="text"
-                id="patient-dni"
-                maxLength={8}
-                placeholder="Ingresa DNI para buscar..."
+              <select
+                id="patient-select"
                 value={dni}
-                onChange={handleDniChange}
+                onChange={handlePatientSelectChange}
                 className="form-input"
-                disabled={loading}
-              />
+                disabled={loading || analysisCompleted}
+              >
+                <option value="">-- Selecciona un paciente --</option>
+                {patientsList.map((p) => (
+                  <option key={p.dni} value={p.dni}>
+                    {p.nombres_apellidos} (DNI: {p.dni})
+                  </option>
+                ))}
+              </select>
               
               {paciente && (
                 <div className="mt-3 flex items-center gap-2 text-sm font-semibold text-emerald-600 bg-emerald-50 p-2 rounded">
@@ -326,21 +443,21 @@ export const Consultas = () => {
               onChange={handleFileChange}
               accept="image/*"
               className="hidden"
-              disabled={loading}
+              disabled={loading || analysisCompleted}
             />
 
             <div
-              onDragOver={!loading ? handleDragOver : undefined}
-              onDragLeave={!loading ? handleDragLeave : undefined}
-              onDrop={!loading ? handleDrop : undefined}
-              onClick={!loading ? triggerFileSelect : undefined}
+              onDragOver={(!loading && !analysisCompleted) ? handleDragOver : undefined}
+              onDragLeave={(!loading && !analysisCompleted) ? handleDragLeave : undefined}
+              onDrop={(!loading && !analysisCompleted) ? handleDrop : undefined}
+              onClick={(!loading && !analysisCompleted) ? triggerFileSelect : undefined}
               className={`border-2 border-dashed rounded-md p-8 text-center cursor-pointer transition-all ${
                 isDragging 
                   ? 'border-accent bg-sky-50' 
                   : previewUrl 
                     ? 'border-slate-300 hover:border-accent bg-slate-50' 
                     : 'border-slate-300 hover:border-accent bg-white'
-              } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+              } ${loading || analysisCompleted ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {previewUrl ? (
                 <div className="space-y-4">
@@ -349,9 +466,17 @@ export const Consultas = () => {
                     alt="Retinografía"
                     className="max-h-64 mx-auto rounded shadow-sm border border-slate-200 object-cover"
                   />
-                  {!loading && (
+                  {!loading && !analysisCompleted && (
                     <p className="text-xs text-secondary">
                       Hacer clic para cambiar la imagen - {file?.name}
+                    </p>
+                  )}
+                  {analysisCompleted && (
+                    <p className="text-xs text-emerald-600 font-semibold flex items-center justify-center gap-1">
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" style={{ width: '14px', height: '14px' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                      </svg>
+                      Imagen cargada y analizada: {file?.name}
                     </p>
                   )}
                 </div>
@@ -369,52 +494,136 @@ export const Consultas = () => {
                 </div>
               )}
             </div>
+
+            {/* Botón Ejecutar Análisis */}
+            {!analysisCompleted && (
+              <div className="mt-6">
+                <button
+                  type="button"
+                  onClick={handleExecuteAnalysis}
+                  disabled={loading || !file || !paciente}
+                  className="btn btn-primary w-full flex items-center justify-center gap-2 py-3 shadow-md transition-all hover:brightness-105"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Ejecutando Inferencia de IA...
+                    </>
+                  ) : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+                      </svg>
+                      Ejecutar Análisis Inteligente
+                    </>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Lado Derecho: Análisis y Guardado */}
         <div className="space-y-6">
-          <div className="module-container">
-            <h2 className="text-lg font-bold text-primary mb-4">Paso 3: Dictamen y Procesamiento</h2>
-            
-            <div className="form-group mb-6">
-              <label className="form-label" htmlFor="doctor-notes">
-                Diagnóstico / Notas Clínicas Finales
-              </label>
-              <textarea
-                id="doctor-notes"
-                rows={4}
-                placeholder="Escribe las notas clínicas finales y prescripciones..."
-                value={diagnostico}
-                onChange={(e) => setDiagnostico(e.target.value)}
-                className="form-input"
-                disabled={loading}
-              />
-            </div>
+          {analysisCompleted && (
+            <div className="module-container">
+              <h2 className="text-lg font-bold text-primary mb-4">Paso 3: Dictamen y Procesamiento</h2>
+              
+              <div className="bg-sky-50 border border-sky-100 rounded-lg p-3.5 mb-5 text-sm">
+                <span className="font-bold text-accent block mb-1">Diagnóstico Sugerido por la IA:</span>
+                <span className="text-primary font-semibold">{obtenerDiagnosticoIA()}</span>
+              </div>
 
-            <button
-              onClick={handleExecuteAnalysisAndSave}
-              disabled={loading || !file || !paciente}
-              className="btn btn-primary w-full flex items-center justify-center gap-2 py-3"
-            >
-              {loading ? (
-                <>
-                  <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Procesando Análisis e Insertando en BD...
-                </>
+              <div className="form-group mb-6">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="form-label mb-0" htmlFor="doctor-notes">
+                    Diagnóstico / Notas Clínicas Finales
+                  </label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const diagIA = obtenerDiagnosticoIA();
+                      setDiagnostico(prev => {
+                        if (!prev) return diagIA;
+                        if (prev.includes(diagIA)) return prev;
+                        return `${diagIA}\n${prev}`;
+                      });
+                    }}
+                    className="text-xs text-accent hover:text-sky-800 font-bold flex items-center gap-1 bg-sky-100/80 hover:bg-sky-100 px-3 py-1 rounded-full transition-all cursor-pointer"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" style={{ width: '12px', height: '12px' }}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Usar Diagnóstico IA
+                  </button>
+                </div>
+                <textarea
+                  id="doctor-notes"
+                  rows={4}
+                  placeholder="Escribe las notas clínicas finales y prescripciones..."
+                  value={diagnostico}
+                  onChange={(e) => setDiagnostico(e.target.value)}
+                  className="form-input"
+                  disabled={saving}
+                />
+              </div>
+
+              {success ? (
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="btn btn-secondary flex-1 py-3"
+                  >
+                    Nueva Consulta
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => navigate('/dashboard')}
+                    className="btn btn-primary flex-1 py-3"
+                  >
+                    Ir al Dashboard
+                  </button>
+                </div>
               ) : (
-                <>
-                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                  </svg>
-                  Ejecutar Análisis y Guardar
-                </>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="btn btn-secondary flex-1 py-3"
+                    disabled={saving}
+                  >
+                    Descartar
+                  </button>
+                  <button
+                    onClick={handleSaveConsultation}
+                    disabled={saving}
+                    className="btn btn-primary flex-[2] flex items-center justify-center gap-2 py-3 shadow-md transition-all hover:brightness-105"
+                  >
+                    {saving ? (
+                      <>
+                        <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Guardando Consulta...
+                      </>
+                    ) : (
+                      <>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Guardar Consulta
+                      </>
+                    )}
+                  </button>
+                </div>
               )}
-            </button>
-          </div>
+            </div>
+          )}
 
           {/* Panel de Resultados de Inferencia */}
           <div className="module-container">

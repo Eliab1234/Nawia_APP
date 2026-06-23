@@ -7,7 +7,12 @@ import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Pacientes from './pages/Pacientes';
 import Consultas from './pages/Consultas';
+import HistorialConsultas from './pages/HistorialConsultas';
 import GestionPersonal from './pages/GestionPersonal';
+import Servicios from './pages/Servicios';
+import Citas from './pages/Citas';
+import HistoriasClinicas from './pages/HistoriasClinicas';
+import Facturacion from './pages/Facturacion';
 
 // Guard para rutas protegidas generales (Cualquier usuario autenticado)
 const PrivateRoute = ({ children }) => {
@@ -100,6 +105,46 @@ export const App = () => {
           element={
             <PrivateRoute>
               <Consultas />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/historial-consultas"
+          element={
+            <PrivateRoute>
+              <HistorialConsultas />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/servicios"
+          element={
+            <PrivateRoute>
+              <Servicios />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/citas"
+          element={
+            <PrivateRoute>
+              <Citas />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/historias"
+          element={
+            <PrivateRoute>
+              <HistoriasClinicas />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/facturacion"
+          element={
+            <PrivateRoute>
+              <Facturacion />
             </PrivateRoute>
           }
         />

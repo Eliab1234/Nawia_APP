@@ -54,7 +54,7 @@ export const Login = () => {
         </div>
         
         <div className="auth-header">
-          <h1>Bienvenido a OcuVision AI</h1>
+          <h1>Bienvenido a NawIA</h1>
           <p>Ingresa tus credenciales para acceder al sistema</p>
         </div>
 

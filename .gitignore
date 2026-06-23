@@ -2,6 +2,9 @@
 node_modules/
 frontend/node_modules/
 
+# Legacy code
+proyecto-hospital/
+
 # Compilados
 dist/
 frontend/dist/

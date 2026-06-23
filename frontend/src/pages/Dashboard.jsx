@@ -52,7 +52,7 @@ export const Dashboard = () => {
       <div className="dashboard-header-bar">
         <div>
           <h1 className="page-title">Panel de Control</h1>
-          <p className="page-subtitle">Sistema inteligente de detección de patologías oculares OcuVision AI.</p>
+          <p className="page-subtitle">Sistema de gestión clínica integral con Inteligencia Artificial NawIA.</p>
         </div>
       </div>
 
