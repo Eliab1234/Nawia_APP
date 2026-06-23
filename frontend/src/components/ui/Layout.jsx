@@ -1,5 +1,6 @@
 import React from 'react';
 import { Sidebar } from './Sidebar';
+import { ChatbotWidget } from './ChatbotWidget';
 
 export const Layout = ({ children }) => {
   return (
@@ -8,6 +9,7 @@ export const Layout = ({ children }) => {
       <main className="main-content">
         {children}
       </main>
+      <ChatbotWidget />
     </div>
   );
 };
