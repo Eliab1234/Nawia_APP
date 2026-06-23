@@ -21,7 +21,7 @@ export const ChatbotWidget = () => {
     {
       id: 'init-msg',
       sender: 'bot',
-      text: '¡Hola! 👋 Soy Nawi-Bot, tu asistente clínico inteligente. ¿En qué sección del sistema o flujo médico te gustaría que te guíe hoy? (Prueba preguntándome sobre Citas, Pacientes o Recetas).',
+      text: '¡Hola! Soy Nawi-Bot, tu asistente clínico inteligente. ¿En qué sección del sistema o flujo médico te gustaría que te guíe hoy? (Prueba preguntándome sobre Citas, Pacientes o Recetas).',
       timestamp: new Date(),
     },
   ]);

@@ -202,8 +202,17 @@ export const GestionPersonal = () => {
                         </td>
                         <td>{m.especialidad}</td>
                         <td>
-                          <span className={`badge ${m.role === 'admin' ? 'badge-danger' : 'badge-success'}`}>
-                            {m.role === 'admin' ? 'Admin' : 'Médico'}
+                          <span className={`badge ${
+                            m.role === 'admin' ? 'badge-danger' : 
+                            m.role === 'asistente' ? 'badge-warning' : 
+                            m.role === 'enfermero' ? 'badge-info' : 'badge-success'
+                          }`} style={
+                            m.role === 'asistente' ? { backgroundColor: '#fef3c7', color: '#d97706' } :
+                            m.role === 'enfermero' ? { backgroundColor: '#e0f2fe', color: '#0369a1' } : {}
+                          }>
+                            {m.role === 'admin' ? 'Admin' : 
+                             m.role === 'asistente' ? 'Asistente' : 
+                             m.role === 'enfermero' ? 'Enfermero' : 'Médico'}
                           </span>
                         </td>
                         <td>
@@ -301,6 +310,8 @@ export const GestionPersonal = () => {
                 >
                   <option value="user">Médico (User)</option>
                   <option value="admin">Administrador (Admin)</option>
+                  <option value="asistente">Asistente Administrativo</option>
+                  <option value="enfermero">Enfermero (Triaje)</option>
                 </select>
               </div>
 
@@ -406,6 +417,8 @@ export const GestionPersonal = () => {
                     >
                       <option value="user">Médico (User)</option>
                       <option value="admin">Administrador (Admin)</option>
+                      <option value="asistente">Asistente Administrativo</option>
+                      <option value="enfermero">Enfermero (Triaje)</option>
                     </select>
                   </div>
                 </div>

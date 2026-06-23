@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '../config/supabaseClient';
 import { Layout } from '../components/ui/Layout';
 
@@ -7,6 +8,26 @@ export const HistorialConsultas = () => {
   const [medicosMap, setMedicosMap] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+
+  const [checkingRole, setCheckingRole] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const role = user.user_metadata?.role || 'user';
+        if (role === 'asistente' || role === 'enfermero') {
+          navigate('/dashboard');
+        } else {
+          setCheckingRole(false);
+        }
+      } else {
+        navigate('/login');
+      }
+    };
+    checkRole();
+  }, [navigate]);
 
   // Estados para el Modal de Detalle de Consulta
   const [selectedConsulta, setSelectedConsulta] = useState(null);
@@ -92,6 +113,14 @@ export const HistorialConsultas = () => {
     if (c.prob_miopia >= 0.5) alertas.push('Miopía');
     return alertas;
   };
+
+  if (checkingRole) {
+    return (
+      <Layout>
+        <div className="text-secondary text-sm py-12 text-center">Verificando permisos de acceso...</div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

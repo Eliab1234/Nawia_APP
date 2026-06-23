@@ -34,6 +34,25 @@ export const Consultas = () => {
 
   const fileInputRef = useRef(null);
 
+  const [checkingRole, setCheckingRole] = useState(true);
+
+  useEffect(() => {
+    const checkRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        const role = user.user_metadata?.role || 'user';
+        if (role === 'asistente' || role === 'enfermero') {
+          navigate('/dashboard');
+        } else {
+          setCheckingRole(false);
+        }
+      } else {
+        navigate('/login');
+      }
+    };
+    checkRole();
+  }, [navigate]);
+
   // Leer DNI de la URL si se transfirió desde la tabla de pacientes
   useEffect(() => {
     const dniParam = searchParams.get('dni');
@@ -370,6 +389,14 @@ export const Consultas = () => {
       return `Diagnóstico IA: Sospecha de ${nombreTraducido} (${porcentaje}% de confianza)`;
     }
   };
+
+  if (checkingRole) {
+    return (
+      <Layout>
+        <div className="text-secondary text-sm py-12 text-center">Verificando permisos de acceso...</div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>

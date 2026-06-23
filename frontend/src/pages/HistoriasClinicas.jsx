@@ -72,11 +72,11 @@ export const HistoriasClinicas = () => {
         .order('nombres_apellidos', { ascending: true });
       setPacientes(pacData || []);
 
-      // 4. Fetch completed appointments that don't have a history yet
+      // 4. Fetch completed or pending appointments that don't have a history yet
       const { data: citData } = await supabase
         .from('citas')
         .select('id, dni_paciente, fecha_hora, pacientes(nombres_apellidos), servicios(nombre)')
-        .eq('estado', 'Completada');
+        .in('estado', ['Pendiente', 'Completada']);
       
       // 5. Fetch histories
       const { data: histData, error: histErr } = await supabase
@@ -102,7 +102,27 @@ export const HistoriasClinicas = () => {
   };
 
   useEffect(() => {
-    fetchData();
+    const initFromParams = async () => {
+      await fetchData();
+      const params = new URLSearchParams(window.location.search);
+      const dniParam = params.get('dni');
+      const citaIdParam = params.get('citaId');
+      if (dniParam) {
+        setSelectedPaciente(dniParam);
+        if (citaIdParam) {
+          setSelectedCita(citaIdParam);
+        }
+        setAgudezaOD('20/20');
+        setAgudezaOI('20/20');
+        setPresionOD('15 mmHg');
+        setPresionOI('15 mmHg');
+        setDiagnostico('');
+        setObservaciones('');
+        setHistoryError(null);
+        setShowHistoryModal(true);
+      }
+    };
+    initFromParams();
   }, []);
 
   const handleOpenHistoryModal = () => {

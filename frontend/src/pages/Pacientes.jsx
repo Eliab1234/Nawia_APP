@@ -50,8 +50,10 @@ export const Pacientes = () => {
         setCurrentUser(user);
         const role = user.user_metadata?.role || 'user';
         setCurrentRole(role);
-        if (role !== 'admin') {
+        if (role === 'user') {
           setMedicoPrimarioId(user.id);
+        } else {
+          setMedicoPrimarioId('');
         }
       }
 
@@ -311,7 +313,7 @@ export const Pacientes = () => {
       setFechaNacimiento('');
       setGenero('M');
       setAntecedentes('');
-      if (currentRole === 'admin') {
+      if (currentRole === 'admin' || currentRole === 'asistente' || currentRole === 'enfermero') {
         setMedicoPrimarioId('');
       }
       
@@ -447,17 +449,19 @@ export const Pacientes = () => {
                             </svg>
                             Historial
                           </button>
-                          <button
-                            type="button"
-                            onClick={() => navigate(`/consultas?dni=${p.dni}`)}
-                            className="btn btn-primary btn-sm flex items-center gap-1 py-1 px-3 text-xs"
-                            title="Iniciar diagnóstico inteligente"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" style={{ width: '14px', height: '14px' }}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            Consulta IA
-                          </button>
+                          {currentRole !== 'asistente' && currentRole !== 'enfermero' && (
+                            <button
+                              type="button"
+                              onClick={() => navigate(`/consultas?dni=${p.dni}`)}
+                              className="btn btn-primary btn-sm flex items-center gap-1 py-1 px-3 text-xs"
+                              title="Iniciar diagnóstico inteligente"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" style={{ width: '14px', height: '14px' }}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v6m3-3H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Consulta IA
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))}
@@ -477,7 +481,7 @@ export const Pacientes = () => {
             {success && <div className="alert alert-success">{success}</div>}
 
             <form onSubmit={handleRegisterPatient} className="space-y-4">
-              {currentRole === 'admin' && (
+              {(currentRole === 'admin' || currentRole === 'asistente' || currentRole === 'enfermero') && (
                 <div className="form-group">
                   <label className="form-label" htmlFor="reg-medico-primario">
                     Médico Primario Asignado
@@ -625,15 +629,17 @@ export const Pacientes = () => {
               ) : consultas.length === 0 ? (
                 <div className="text-center py-12 border border-dashed border-slate-200 rounded-lg bg-slate-50">
                   <p className="text-secondary text-sm mb-4">No se han registrado consultas ni predicciones de IA para este paciente.</p>
-                  <button
-                    onClick={() => {
-                      handleCloseModal();
-                      navigate(`/consultas?dni=${selectedPaciente.dni}`);
-                    }}
-                    className="btn btn-primary btn-sm py-2 px-4"
-                  >
-                    Iniciar Primera Consulta IA
-                  </button>
+                  {currentRole !== 'asistente' && currentRole !== 'enfermero' && (
+                    <button
+                      onClick={() => {
+                        handleCloseModal();
+                        navigate(`/consultas?dni=${selectedPaciente.dni}`);
+                      }}
+                      className="btn btn-primary btn-sm py-2 px-4"
+                    >
+                      Iniciar Primera Consulta IA
+                    </button>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2">

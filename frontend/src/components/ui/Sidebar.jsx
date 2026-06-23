@@ -3,7 +3,7 @@ import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../config/supabaseClient';
 import { Logo } from './Logo';
 
-export const Sidebar = () => {
+export const Sidebar = ({ isCollapsed = false, onToggle }) => {
   const [user, setUser] = useState(null);
   const [role, setRole] = useState('');
   const location = useLocation();
@@ -129,16 +129,52 @@ export const Sidebar = () => {
 
   // Filtrar según rol del usuario logueado
   const filteredItems = navItems.filter(item => {
+    if (role === 'admin') return true;
+    if (role === 'asistente') {
+      return !['/consultas', '/historial-consultas', '/historias', '/personal'].includes(item.path);
+    }
+    if (role === 'enfermero') {
+      return ['/dashboard', '/pacientes', '/historias'].includes(item.path);
+    }
+    // Por defecto es Médico (user)
     if (item.adminOnly) {
-      return role === 'admin';
+      return false;
     }
     return true;
   });
 
   return (
     <aside className="sidebar">
-      <div className="sidebar-header">
-        <Logo size={32} />
+      <div className="sidebar-header" style={{ display: 'flex', alignItems: 'center', width: '100%', justifyContent: 'space-between', gap: '8px' }}>
+        <Logo size={32} hideText={isCollapsed} />
+        <button 
+          onClick={onToggle} 
+          className="btn-sidebar-toggle" 
+          title={isCollapsed ? "Expandir menú" : "Colapsar menú"}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'var(--text-secondary)',
+            cursor: 'pointer',
+            padding: '6px',
+            borderRadius: '6px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            marginLeft: isCollapsed ? '0' : 'auto',
+            transition: 'background-color 0.2s',
+          }}
+        >
+          {isCollapsed ? (
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" style={{ width: '16px', height: '16px' }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M11.25 4.5l7.5 7.5-7.5 7.5m-6-15l7.5 7.5-7.5 7.5" />
+            </svg>
+          ) : (
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" style={{ width: '16px', height: '16px' }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5" />
+            </svg>
+          )}
+        </button>
       </div>
 
       <nav className="sidebar-nav">
@@ -149,32 +185,37 @@ export const Sidebar = () => {
               key={item.path}
               to={item.path}
               className={`nav-item ${isActive ? 'active' : ''}`}
+              title={isCollapsed ? item.name : ''}
             >
               <span className="nav-icon">{item.icon}</span>
-              <span className="nav-label">{item.name}</span>
+              {!isCollapsed && <span className="nav-label">{item.name}</span>}
             </Link>
           );
         })}
       </nav>
 
       <div className="sidebar-footer">
-        {user && (
+        {user && !isCollapsed && (
           <div className="sidebar-user-info">
             <span className="user-email-lbl" title={user.email}>
               {user.user_metadata?.nombre_completo || user.email}
             </span>
             <span className="user-rol-lbl">
-              {role === 'admin' ? 'Administrador' : 'Médico'}
+              {role === 'admin' ? 'Administrador' : 
+               role === 'asistente' ? 'Asistente' : 
+               role === 'enfermero' ? 'Enfermero (Triaje)' : 'Médico'}
             </span>
           </div>
         )}
-        <button className="btn-logout-sidebar" onClick={handleLogout}>
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" style={{ width: '18px', height: '18px', marginRight: '8px' }}>
+        <button className="btn-logout-sidebar" onClick={handleLogout} title="Cerrar sesión" style={{ padding: isCollapsed ? '12px' : '12px 16px', justifyContent: isCollapsed ? 'center' : 'center' }}>
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" style={{ width: '18px', height: '18px', marginRight: isCollapsed ? '0' : '8px' }}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75" />
           </svg>
-          Cerrar sesión
+          {!isCollapsed && <span>Cerrar sesión</span>}
         </button>
       </div>
     </aside>
   );
 };
+
+export default Sidebar;

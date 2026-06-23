@@ -1,6 +1,6 @@
 import React from 'react';
 
-export const Logo = ({ className = '', size = 32 }) => {
+export const Logo = ({ className = '', size = 32, hideText = false }) => {
   return (
     <div className={`flex items-center gap-2 ${className}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '8px' }}>
       <svg
@@ -28,9 +28,13 @@ export const Logo = ({ className = '', size = 32 }) => {
           strokeLinejoin="round"
         />
       </svg>
-      <span style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.5px', color: 'var(--text-primary)' }}>
-        Naw<span className="text-accent">IA</span>
-      </span>
+      {!hideText && (
+        <span style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.5px', color: 'var(--text-primary)' }}>
+          Naw<span className="text-accent">IA</span>
+        </span>
+      )}
     </div>
   );
 };
+
+export default Logo;
