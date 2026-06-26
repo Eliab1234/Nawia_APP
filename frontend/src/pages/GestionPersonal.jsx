@@ -480,7 +480,7 @@ export const GestionPersonal = () => {
                 </div>
               </div>
 
-              <div className="form-actions-modal" style={{ padding: '16px 24px', margin: 0 }}>
+              <div className="form-actions-modal">
                 <button
                   type="button"
                   className="btn btn-secondary"

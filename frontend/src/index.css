@@ -326,7 +326,7 @@ body {
 
 /* Form Styles */
 .form-group {
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 }
 
 .form-label {
@@ -334,7 +334,7 @@ body {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
 
 .form-input {
@@ -519,7 +519,10 @@ select.form-input {
   gap: 12px;
   margin-top: 24px;
   border-top: 1px solid var(--border-color);
-  padding-top: 20px;
+  padding: 16px 24px 24px 24px;
+  background-color: var(--bg-secondary);
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
 }
 
 /* Dashboard Specific Styles */

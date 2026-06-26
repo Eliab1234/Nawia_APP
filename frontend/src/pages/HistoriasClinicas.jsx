@@ -251,14 +251,19 @@ export const HistoriasClinicas = () => {
 
       <div className="module-container">
         {/* Search */}
-        <div className="mb-6">
+        <div className="mb-6 relative max-w-md">
           <input
             type="text"
             placeholder="Buscar por paciente, DNI o diagnóstico..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="form-input max-w-md"
+            className="form-input pl-10"
           />
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-secondary">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" style={{ width: '18px', height: '18px' }}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.637 10.637z" />
+            </svg>
+          </span>
         </div>
 
         {loading ? (
@@ -277,72 +282,108 @@ export const HistoriasClinicas = () => {
               });
 
               return (
-                <div key={hist.id} className="border border-slate-200 rounded-lg p-6 bg-slate-50/50 space-y-4 shadow-sm hover:border-slate-300 transition-all">
-                  <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 pb-3 gap-2">
+                <div key={hist.id} className="w-full border border-slate-200 rounded-xl p-6 bg-white space-y-6 shadow-sm hover:shadow-md hover:border-slate-300 transition-all border-l-4 border-l-sky-500 box-border">
+                  {/* Cabecera de la Historia */}
+                  <div className="w-full flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-100 pb-4 gap-4">
                     <div>
-                      <span className="text-xs font-bold text-accent uppercase tracking-wider block">Paciente</span>
-                      <h3 className="text-base font-bold text-primary">{hist.pacientes?.nombres_apellidos}</h3>
-                      <p className="text-xs text-secondary">DNI: {hist.dni_paciente} | Fecha: {dateStr}</p>
+                      <div className="flex flex-wrap items-center gap-2 mb-1.5">
+                        <span className="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded-md font-semibold">Paciente</span>
+                        <span className="text-xs bg-sky-50 text-sky-700 border border-sky-100 px-2 py-0.5 rounded-md font-semibold">DNI: {hist.dni_paciente}</span>
+                      </div>
+                      <h3 className="text-lg font-extrabold text-primary">{hist.pacientes?.nombres_apellidos}</h3>
+                      <p className="text-xs text-secondary mt-1 flex items-center gap-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-3.5 h-3.5">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                        </svg>
+                        Fecha de Registro: {dateStr}
+                      </p>
                     </div>
-                    <div className="text-right sm:text-right">
-                      <span className="text-xs font-semibold text-slate-400 block">Atendido por:</span>
-                      <span className="text-sm font-bold text-primary">{doctorName}</span>
-                    </div>
-                  </div>
-
-                  {/* Visual Parameters Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-white p-4 rounded-lg border border-slate-100">
-                    <div>
-                      <span className="text-xs font-bold text-slate-400 block">Agudeza Visual OD</span>
-                      <span className="text-sm font-bold text-primary">{hist.agudeza_visual_od || 'N/A'}</span>
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold text-slate-400 block">Agudeza Visual OI</span>
-                      <span className="text-sm font-bold text-primary">{hist.agudeza_visual_oi || 'N/A'}</span>
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold text-slate-400 block">Presión Intraocular OD</span>
-                      <span className="text-sm font-bold text-primary">{hist.presion_intraocular_od || 'N/A'}</span>
-                    </div>
-                    <div>
-                      <span className="text-xs font-bold text-slate-400 block">Presión Intraocular OI</span>
-                      <span className="text-sm font-bold text-primary">{hist.presion_intraocular_oi || 'N/A'}</span>
+                    <div className="flex items-center gap-2.5 bg-slate-50 border border-slate-100 py-2 px-3.5 rounded-lg text-right sm:text-right flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-sky-50 flex items-center justify-center text-sky-600 flex-shrink-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2" stroke="currentColor" className="w-4 h-4">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+                        </svg>
+                      </div>
+                      <div className="text-left">
+                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Atendido por</span>
+                        <span className="text-sm font-bold text-primary">{doctorName}</span>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Diagnosis & Observaciones */}
-                  <div className="space-y-2">
+                  {/* Panel de Parámetros Visuales (Estructurado por ojo OD / OI) */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Ojo Derecho */}
+                    <div className="bg-slate-50/60 border border-slate-100 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center gap-1.5 border-b border-slate-200/50 pb-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-sky-500"></div>
+                        <h4 className="text-xs font-bold text-sky-800 uppercase tracking-wider">Ojo Derecho (OD)</h4>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-[11px] font-semibold text-slate-400 block mb-0.5">Agudeza Visual</span>
+                          <span className="text-sm font-extrabold text-primary">{hist.agudeza_visual_od || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[11px] font-semibold text-slate-400 block mb-0.5">Presión Intraocular</span>
+                          <span className="text-sm font-extrabold text-primary">{hist.presion_intraocular_od || 'N/A'}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Ojo Izquierdo */}
+                    <div className="bg-slate-50/60 border border-slate-100 rounded-xl p-4 space-y-3">
+                      <div className="flex items-center gap-1.5 border-b border-slate-200/50 pb-2">
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                        <h4 className="text-xs font-bold text-emerald-800 uppercase tracking-wider">Ojo Izquierdo (OI)</h4>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-[11px] font-semibold text-slate-400 block mb-0.5">Agudeza Visual</span>
+                          <span className="text-sm font-extrabold text-primary">{hist.agudeza_visual_oi || 'N/A'}</span>
+                        </div>
+                        <div>
+                          <span className="text-[11px] font-semibold text-slate-400 block mb-0.5">Presión Intraocular</span>
+                          <span className="text-sm font-extrabold text-primary">{hist.presion_intraocular_oi || 'N/A'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Diagnóstico y Tratamiento */}
+                  <div className="bg-slate-50/35 border border-slate-100 rounded-xl p-5 space-y-4">
                     <div>
-                      <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Diagnóstico</span>
-                      <p className="text-sm text-slate-700 whitespace-pre-line leading-relaxed font-semibold">{hist.diagnostico}</p>
+                      <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider block mb-1">Diagnóstico</span>
+                      <p className="text-sm text-slate-800 leading-relaxed font-bold">{hist.diagnostico}</p>
                     </div>
                     {hist.observaciones && (
-                      <div>
-                        <span className="text-xs font-bold text-slate-400 uppercase tracking-wider block">Observaciones / Tratamiento</span>
-                        <p className="text-sm text-slate-600 whitespace-pre-line leading-relaxed">{hist.observaciones}</p>
+                      <div className="border-t border-slate-100 pt-3">
+                        <span className="text-xs font-extrabold text-slate-400 uppercase tracking-wider block mb-1">Observaciones / Tratamiento</span>
+                        <p className="text-sm text-slate-650 leading-relaxed whitespace-pre-line">{hist.observaciones}</p>
                       </div>
                     )}
                   </div>
 
-                  {/* Recipe section */}
-                  <div className="flex justify-end border-t border-slate-200/80 pt-3">
+                  {/* Sección de Receta */}
+                  <div className="flex justify-end border-t border-slate-100 pt-4">
                     {hist.recetas_lentes ? (
                       <button
                         onClick={() => handleOpenViewRecipe(hist.recetas_lentes, hist)}
-                        className="btn btn-secondary flex items-center gap-1 py-1 px-4 text-xs font-bold"
+                        className="btn btn-secondary flex items-center gap-1.5 py-2 px-4 text-xs font-bold transition-all hover:bg-sky-50/50"
                         style={{ border: '1px solid #bae6fd', backgroundColor: '#f0f9ff', color: 'var(--accent-color)' }}
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" style={{ width: '14px', height: '14px' }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                         </svg>
                         Ver Receta de Lentes
                       </button>
                     ) : (
                       <button
                         onClick={() => handleOpenRecipeModal(hist)}
-                        className="btn btn-primary flex items-center gap-1 py-1 px-4 text-xs font-bold"
+                        className="btn btn-primary flex items-center gap-1.5 py-2 px-4 text-xs font-bold transition-all"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" style={{ width: '14px', height: '14px' }}>
+                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="currentColor" className="w-4 h-4">
                           <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                         </svg>
                         Recetar Lentes
@@ -525,7 +566,7 @@ export const HistoriasClinicas = () => {
 
                 <div className="border border-slate-200 rounded-lg p-4 bg-slate-50 space-y-3">
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ojo Derecho (OD)</h4>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="form-group">
                       <label className="text-xs font-semibold text-slate-600 block mb-1">Esfera</label>
                       <input type="number" step="0.25" className="form-input py-1.5 px-2" value={odEsfera} onChange={(e) => setOdEsfera(e.target.value)} placeholder="Ej. -1.75"/>
@@ -543,7 +584,7 @@ export const HistoriasClinicas = () => {
 
                 <div className="border border-slate-200 rounded-lg p-4 bg-slate-50 space-y-3">
                   <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Ojo Izquierdo (OI)</h4>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-3 gap-4">
                     <div className="form-group">
                       <label className="text-xs font-semibold text-slate-600 block mb-1">Esfera</label>
                       <input type="number" step="0.25" className="form-input py-1.5 px-2" value={oiEsfera} onChange={(e) => setOiEsfera(e.target.value)} placeholder="Ej. -1.25"/>
@@ -646,24 +687,24 @@ export const HistoriasClinicas = () => {
                 <table className="w-full text-sm border-collapse text-left" style={{ border: '1px solid #cbd5e1' }}>
                   <thead>
                     <tr className="bg-slate-100 font-bold border-b text-primary" style={{ borderColor: '#cbd5e1' }}>
-                      <th className="p-2 border-r" style={{ borderColor: '#cbd5e1' }}>Ojo</th>
-                      <th className="p-2 border-r" style={{ borderColor: '#cbd5e1' }}>Esfera (SPH)</th>
-                      <th className="p-2 border-r" style={{ borderColor: '#cbd5e1' }}>Cilindro (CYL)</th>
-                      <th className="p-2" style={{ borderColor: '#cbd5e1' }}>Eje (AXIS)</th>
+                      <th className="p-3 border-r" style={{ borderColor: '#cbd5e1' }}>Ojo</th>
+                      <th className="p-3 border-r" style={{ borderColor: '#cbd5e1' }}>Esfera (SPH)</th>
+                      <th className="p-3 border-r" style={{ borderColor: '#cbd5e1' }}>Cilindro (CYL)</th>
+                      <th className="p-3" style={{ borderColor: '#cbd5e1' }}>Eje (AXIS)</th>
                     </tr>
                   </thead>
                   <tbody className="text-slate-800">
                     <tr className="border-b" style={{ borderColor: '#cbd5e1' }}>
-                      <td className="p-2 font-bold bg-slate-50 border-r" style={{ borderColor: '#cbd5e1' }}>Derecho (OD)</td>
-                      <td className="p-2 border-r" style={{ borderColor: '#cbd5e1' }}>{activeRecipe.receta.od_esfera !== null ? (activeRecipe.receta.od_esfera > 0 ? '+' : '') + parseFloat(activeRecipe.receta.od_esfera).toFixed(2) : '0.00'}</td>
-                      <td className="p-2 border-r" style={{ borderColor: '#cbd5e1' }}>{activeRecipe.receta.od_cilindro !== null ? (activeRecipe.receta.od_cilindro > 0 ? '+' : '') + parseFloat(activeRecipe.receta.od_cilindro).toFixed(2) : '0.00'}</td>
-                      <td className="p-2">{activeRecipe.receta.od_eje !== null ? activeRecipe.receta.od_eje + '°' : '0°'}</td>
+                      <td className="p-3 font-bold bg-slate-50 border-r" style={{ borderColor: '#cbd5e1' }}>Derecho (OD)</td>
+                      <td className="p-3 border-r" style={{ borderColor: '#cbd5e1' }}>{activeRecipe.receta.od_esfera !== null ? (activeRecipe.receta.od_esfera > 0 ? '+' : '') + parseFloat(activeRecipe.receta.od_esfera).toFixed(2) : '0.00'}</td>
+                      <td className="p-3 border-r" style={{ borderColor: '#cbd5e1' }}>{activeRecipe.receta.od_cilindro !== null ? (activeRecipe.receta.od_cilindro > 0 ? '+' : '') + parseFloat(activeRecipe.receta.od_cilindro).toFixed(2) : '0.00'}</td>
+                      <td className="p-3">{activeRecipe.receta.od_eje !== null ? activeRecipe.receta.od_eje + '°' : '0°'}</td>
                     </tr>
                     <tr>
-                      <td className="p-2 font-bold bg-slate-50 border-r" style={{ borderColor: '#cbd5e1' }}>Izquierdo (OI)</td>
-                      <td className="p-2 border-r" style={{ borderColor: '#cbd5e1' }}>{activeRecipe.receta.oi_esfera !== null ? (activeRecipe.receta.oi_esfera > 0 ? '+' : '') + parseFloat(activeRecipe.receta.oi_esfera).toFixed(2) : '0.00'}</td>
-                      <td className="p-2 border-r" style={{ borderColor: '#cbd5e1' }}>{activeRecipe.receta.oi_cilindro !== null ? (activeRecipe.receta.oi_cilindro > 0 ? '+' : '') + parseFloat(activeRecipe.receta.oi_cilindro).toFixed(2) : '0.00'}</td>
-                      <td className="p-2">{activeRecipe.receta.oi_eje !== null ? activeRecipe.receta.oi_eje + '°' : '0°'}</td>
+                      <td className="p-3 font-bold bg-slate-50 border-r" style={{ borderColor: '#cbd5e1' }}>Izquierdo (OI)</td>
+                      <td className="p-3 border-r" style={{ borderColor: '#cbd5e1' }}>{activeRecipe.receta.oi_esfera !== null ? (activeRecipe.receta.oi_esfera > 0 ? '+' : '') + parseFloat(activeRecipe.receta.oi_esfera).toFixed(2) : '0.00'}</td>
+                      <td className="p-3 border-r" style={{ borderColor: '#cbd5e1' }}>{activeRecipe.receta.oi_cilindro !== null ? (activeRecipe.receta.oi_cilindro > 0 ? '+' : '') + parseFloat(activeRecipe.receta.oi_cilindro).toFixed(2) : '0.00'}</td>
+                      <td className="p-3">{activeRecipe.receta.oi_eje !== null ? activeRecipe.receta.oi_eje + '°' : '0°'}</td>
                     </tr>
                   </tbody>
                 </table>
@@ -692,7 +733,7 @@ export const HistoriasClinicas = () => {
                 </div>
               </div>
             </div>
-            <div className="form-actions-modal bg-slate-50" style={{ borderTop: '1px solid var(--border-color)', margin: 0, padding: '16px 24px' }}>
+            <div className="form-actions-modal">
               <button className="btn btn-secondary" onClick={() => setShowViewRecipeModal(false)}>
                 Cerrar
               </button>

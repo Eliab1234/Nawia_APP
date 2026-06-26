@@ -298,7 +298,7 @@ export const HistorialConsultas = () => {
               </div>
             </div>
 
-            <div className="form-actions-modal" style={{ padding: '16px 24px', margin: 0, borderTop: '1px solid var(--border-color)' }}>
+            <div className="form-actions-modal">
               <button className="btn btn-secondary" onClick={handleCloseModal}>
                 Cerrar
               </button>

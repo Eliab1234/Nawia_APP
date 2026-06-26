@@ -46,7 +46,16 @@ const ConsultasTrendChart = ({ data }) => {
       {/* Puntos de datos y etiquetas */}
       {points.map((p, i) => (
         <g key={i}>
-          <circle cx={p.x} cy={p.y} r="4.5" fill="#ffffff" stroke="var(--accent-color)" strokeWidth="2.5" className="cursor-pointer hover:scale-125 transition-transform" />
+          <circle
+            cx={p.x}
+            cy={p.y}
+            r="4.5"
+            fill="#ffffff"
+            stroke="var(--accent-color)"
+            strokeWidth="2.5"
+            className="cursor-pointer hover:scale-125 transition-transform"
+            style={{ transformOrigin: 'center', transformBox: 'fill-box' }}
+          />
           <text x={p.x} y={p.y - 10} textAnchor="middle" fontSize="10" fontWeight="bold" fill="var(--text-primary)">
             {p.val}
           </text>

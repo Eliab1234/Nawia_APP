@@ -185,17 +185,33 @@ export const Pacientes = () => {
     setConsultas([]);
 
     try {
-      const { data, error } = await supabase
+      // 1. Cargar consultas de IA
+      const { data: consultasData, error: consultasErr } = await supabase
         .from('consultas')
         .select('*')
-        .eq('dni_paciente', paciente.dni)
-        .order('fecha_hora', { ascending: false });
+        .eq('dni_paciente', paciente.dni);
 
-      if (error) throw error;
-      setConsultas(data || []);
+      if (consultasErr) throw consultasErr;
+
+      // 2. Cargar citas completadas
+      const { data: citasData, error: citasErr } = await supabase
+        .from('citas')
+        .select('*, servicios(nombre, precio)')
+        .eq('dni_paciente', paciente.dni)
+        .eq('estado', 'Completada');
+
+      if (citasErr) throw citasErr;
+
+      // 3. Unificar y ordenar por fecha descendente
+      const combinedTimeline = [
+        ...(consultasData || []).map(item => ({ ...item, timelineType: 'consulta' })),
+        ...(citasData || []).map(item => ({ ...item, timelineType: 'cita' }))
+      ].sort((a, b) => new Date(b.fecha_hora) - new Date(a.fecha_hora));
+
+      setConsultas(combinedTimeline);
     } catch (err) {
-      console.error('Error al cargar consultas:', err);
-      setConsultasError('No se pudo obtener el historial de consultas del paciente.');
+      console.error('Error al cargar historial completo:', err);
+      setConsultasError('No se pudo obtener el historial unificado de citas y consultas.');
     } finally {
       setLoadingConsultas(false);
     }
@@ -628,7 +644,7 @@ export const Pacientes = () => {
                 <div className="alert alert-danger text-center">{consultasError}</div>
               ) : consultas.length === 0 ? (
                 <div className="text-center py-12 border border-dashed border-slate-200 rounded-lg bg-slate-50">
-                  <p className="text-secondary text-sm mb-4">No se han registrado consultas ni predicciones de IA para este paciente.</p>
+                  <p className="text-secondary text-sm mb-4">No se han registrado consultas de IA ni citas completadas para este paciente.</p>
                   {currentRole !== 'asistente' && currentRole !== 'enfermero' && (
                     <button
                       onClick={() => {
@@ -643,8 +659,8 @@ export const Pacientes = () => {
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {consultas.map((c) => {
-                    const fecha = new Date(c.fecha_hora).toLocaleString('es-PE', {
+                  {consultas.map((item) => {
+                    const fecha = new Date(item.fecha_hora).toLocaleString('es-PE', {
                       day: '2-digit',
                       month: '2-digit',
                       year: 'numeric',
@@ -653,6 +669,49 @@ export const Pacientes = () => {
                       hour12: true
                     });
 
+                    if (item.timelineType === 'cita') {
+                      // Renderizar tarjeta de cita completada
+                      const doc = medicosList.find((m) => m.id === item.id_medico);
+                      const doctorName = doc ? doc.nombre_completo : 'Médico de la clínica';
+                      const servicioNombre = item.servicios?.nombre || 'Servicio General';
+                      const servicioPrecio = item.servicios?.precio || 0;
+
+                      return (
+                        <div key={`cita-${item.id}`} className="border border-emerald-200 rounded-lg p-5 mb-6 bg-emerald-50/20 space-y-3 shadow-sm border-l-4 border-l-emerald-500">
+                          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-emerald-100 pb-3 gap-2">
+                            <div>
+                              <span className="text-[10px] bg-emerald-100 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">Cita Médica Completada</span>
+                              <p className="text-sm font-semibold text-primary mt-1">{fecha}</p>
+                            </div>
+                            <div className="bg-emerald-50 text-emerald-700 px-3 py-1 rounded text-xs font-bold border border-emerald-100">
+                              ID Cita: #{item.id}
+                            </div>
+                          </div>
+
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm text-primary">
+                            <div>
+                              <span className="text-xs font-bold text-slate-400 block mb-0.5">Servicio Realizado</span>
+                              <span className="font-bold text-primary">{servicioNombre}</span>
+                              <span className="text-xs text-emerald-600 font-bold block mt-0.5">S/. {parseFloat(servicioPrecio).toFixed(2)}</span>
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold text-slate-400 block mb-0.5">Médico Tratante</span>
+                              <span className="font-bold text-primary">{doctorName}</span>
+                            </div>
+                          </div>
+
+                          {item.motivo_consulta && (
+                            <div className="bg-white border border-slate-100 rounded p-3 text-xs text-slate-600 leading-relaxed">
+                              <strong>Motivo / Observaciones de Cita:</strong>
+                              <p className="mt-1">{item.motivo_consulta}</p>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    }
+
+                    // Renderizar tarjeta de consulta (Inferencia IA)
+                    const c = item;
                     const probsMapped = {
                       Normal: c.prob_normal,
                       Glaucoma: c.prob_glaucoma,
@@ -664,11 +723,11 @@ export const Pacientes = () => {
                     };
 
                     return (
-                      <div key={c.id} className="border border-slate-200 rounded-lg p-5 mb-6 bg-slate-50 space-y-4 shadow-sm">
+                      <div key={`consulta-${c.id}`} className="border border-slate-200 rounded-lg p-5 mb-6 bg-slate-50 space-y-4 shadow-sm border-l-4 border-l-sky-500">
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-slate-200 pb-3 gap-2">
                           <div>
-                            <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Fecha de Consulta</span>
-                            <p className="text-sm font-semibold text-primary">{fecha}</p>
+                            <span className="text-[10px] bg-sky-100 text-sky-800 border border-sky-200 px-2 py-0.5 rounded-md font-bold uppercase tracking-wider">Análisis de Diagnóstico Inteligente (IA)</span>
+                            <p className="text-sm font-semibold text-primary mt-1">{fecha}</p>
                           </div>
                           <div className="bg-sky-50 text-sky-700 px-3 py-1 rounded text-xs font-bold border border-sky-100">
                             ID Consulta: #{c.id}
@@ -732,7 +791,7 @@ export const Pacientes = () => {
               )}
             </div>
             
-            <div className="form-actions-modal" style={{ padding: '16px 24px', margin: 0, borderTop: '1px solid var(--border-color)' }}>
+            <div className="form-actions-modal">
               <button className="btn btn-secondary" onClick={handleCloseModal}>
                 Cerrar
               </button>
@@ -760,23 +819,26 @@ export const Pacientes = () => {
 
               {/* Lista de médicos actualmente asignados */}
               <div className="space-y-3">
-                <h3 className="text-sm font-bold text-primary">Médicos Vinculados</h3>
+                <h3 className="text-sm font-bold text-primary mb-3.5">Médicos Vinculados</h3>
                 <div className="space-y-2">
+                  {assignedMedicos.length === 0 && (
+                    <p className="text-xs text-secondary italic">No hay médicos vinculados a este paciente.</p>
+                  )}
                   {assignedMedicos.map((pm) => {
                     const doc = medicosList.find((m) => m.id === pm.id_medico);
                     const docName = doc ? doc.nombre_completo : 'Médico de la clínica';
                     const docSpec = doc ? doc.especialidad : '';
 
                     return (
-                      <div key={pm.id_medico} className="flex justify-between items-center bg-slate-50 border border-slate-200 rounded p-3 text-sm">
+                      <div key={pm.id_medico} className="flex justify-between items-center bg-slate-50 border border-slate-200 rounded-lg p-4 text-sm shadow-xs">
                         <div>
                           <div className="font-bold text-primary">
                             {docName} {pm.es_medico_primario && <span className="text-xs bg-sky-50 text-sky-700 border border-sky-200 px-1.5 py-0.5 rounded ml-2">Primario</span>}
                             {pm.es_caso_especial && <span className="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded ml-2">Caso Especial</span>}
                           </div>
-                          {docSpec && <div className="text-xs text-secondary">{docSpec}</div>}
+                          {docSpec && <div className="text-xs text-secondary mt-1">{docSpec}</div>}
                           {pm.es_caso_especial && pm.motivo_caso_especial && (
-                            <div className="text-xs text-slate-500 mt-1 bg-white p-1 rounded border border-slate-100 italic">
+                            <div className="text-xs text-slate-500 mt-1.5 bg-white p-1.5 rounded border border-slate-100 italic">
                               Motivo: {pm.motivo_caso_especial}
                             </div>
                           )}
@@ -801,8 +863,8 @@ export const Pacientes = () => {
 
               {/* Formulario para agregar una nueva asignación */}
               {currentRole === 'admin' && (
-                <div className="border-t border-slate-200 pt-4">
-                  <h3 className="text-sm font-bold text-primary mb-3">Asignar Médico Adicional</h3>
+                <div className="border-t border-solid border-slate-200 pt-6 mt-6">
+                  <h3 className="text-sm font-bold text-primary mb-4">Asignar Médico Adicional</h3>
                   
                   <form onSubmit={handleAddAssignment} className="space-y-4">
                     <div className="form-group">
@@ -882,7 +944,7 @@ export const Pacientes = () => {
               )}
             </div>
 
-            <div className="form-actions-modal" style={{ padding: '16px 24px', margin: 0 }}>
+            <div className="form-actions-modal">
               <button
                 type="button"
                 className="btn btn-secondary"
